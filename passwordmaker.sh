@@ -1,7 +1,9 @@
 #!/bin/bash
-read -p "Enter Your Username: " USERNAME
-read -p "Enter Your Password: " PASSWORD
+read -p "Enter your Username: " USERNAME
+read -s -p "Enter your Password: " PASSWORD
 SALT=$(openssl rand -base64 16)
 PASSWORD_HASH=$(echo -n "${SALT}${PASSWORD}" | sha256sum | awk '{print $1}')
-sqlite3 my_database.db "INSERT INTO users (USERNAME, PASSWORD, SALT) VALUES ('$USERNAME', $PASSWORD, $SALT);"
-cat Passwords.txt
+sqlite3 PASSWORDSFORSSO.db "INSERT INTO USERSALTPASS (USERNAME, SALT, PASSWORD) VALUES ('$USERNAME', '$SALT', '$PASSWORD_HASH');"
+echo "User stored successfully."
+# Show contents properly
+sqlite3 PASSWORDSFORSSO.db "SELECT * FROM USERSALTPASS;"
