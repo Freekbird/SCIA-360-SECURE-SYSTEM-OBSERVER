@@ -14,7 +14,7 @@ FILESALT=$(sqlite3 PASSWORDSFORSSO.db "SELECT SALT FROM USERSALTPASS WHERE USERN
 FILEPASSWD=$(sqlite3 PASSWORDSFORSSO.db "SELECT PASSWORD FROM USERSALTPASS WHERE USERNAME='$USERNAME';")
 
 if [ -z "$FILEUSERNAME" ]; then
-    whiptail --title "ERROR" --msgbox "USERNAME DOES NOT EXIST" 8 78
+    whiptail --title "ERROR" --msgbox "INVALID CREDENTIALS" 8 78
     exit 1
 fi
 
@@ -23,6 +23,6 @@ if [[ "$PASSWORDHASH" == "$FILEPASSWD" ]]; then
     whiptail --title "SUCCESS" --msgbox "Login successful" 8 78
     exit 0
 else
-    whiptail --title "INVALID PASSWORD" --msgbox "Please try again" 8 78
+    whiptail --title "INVALID CREDENTIALS" --msgbox "Please try again" 8 78
     exit 1
 fi
