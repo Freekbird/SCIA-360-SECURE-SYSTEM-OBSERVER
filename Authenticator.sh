@@ -159,3 +159,8 @@ fi
 ;;
 
 esac
+case $CHOICE in
+	"3)")
+exit
+;;
+esac
