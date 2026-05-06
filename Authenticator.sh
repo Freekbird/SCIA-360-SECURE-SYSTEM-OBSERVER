@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 USERNAME=$(whiptail --inputbox "Enter Username" 8 78 3>&1 1>&2 2>&3)
@@ -13,16 +14,29 @@ FILEUSERNAME=$(sqlite3 PASSWORDSFORSSO.db "SELECT USERNAME FROM USERSALTPASS WHE
 FILESALT=$(sqlite3 PASSWORDSFORSSO.db "SELECT SALT FROM USERSALTPASS WHERE USERNAME='$USERNAME';")
 FILEPASSWD=$(sqlite3 PASSWORDSFORSSO.db "SELECT PASSWORD FROM USERSALTPASS WHERE USERNAME='$USERNAME';")
 
+role=$(sqlite3 PASSWORDSFORSSO.db "SELECT ADMIN FROM USERSALTPASS WHERE USERNAME='$USERNAME' LIMIT 1;")
+if [ "$role" = "1" ]; then
+	ROLE="ADMIN"
+else
+	ROLE="AUDITOR"
+fi
+
 if [ -z "$FILEUSERNAME" ]; then
-    whiptail --title "ERROR" --msgbox "INVALID CREDENTIALS" 8 78
+    whiptail --title "ERROR" --msgbox "Invalid Credentials" 8 78
     exit 1
 fi
 
 PASSWORDHASH=$(echo -n "${FILESALT}${PASSWORD}" | sha256sum | awk '{print $1}')
 if [[ "$PASSWORDHASH" == "$FILEPASSWD" ]]; then
-    whiptail --title "SUCCESS" --msgbox "Login successful" 8 78
-    exit 0
+	while true; do
+	if [[ "$ROLE" = "ADMIN" ]]; then
+		top -c
+	else
+		ps -eo pid,user,%cpu,%mem,cmd --sort=-%cpu | head -n 20
+		sleep 2
+	fi
+	done
 else
-    whiptail --title "INVALID CREDENTIALS" --msgbox "Please try again" 8 78
+    whiptail --title "Invalid Credentials" --msgbox "Please try again" 8 78
     exit 1
 fi
