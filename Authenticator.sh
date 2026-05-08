@@ -36,45 +36,53 @@ fi
 
 PASSWORDHASH=$(echo -n "${FILESALT}${PASSWORD}" | sha256sum | awk '{print $1}')
 if [[ "$PASSWORDHASH" == "$FILEPASSWD" ]]; then
-	while true; do
 	if [[ "$ROLE" = "ADMIN" ]]; then
-		clear
-		top -b -n 1
-		echo "Press 'p' to snapshot, 'q' to quit"
-		read -n 1 -s key
+		while true; do
+			clear
+			top -b -n 1
+			echo
+			echo "Press 'p' to snapshot, 'q' to quit"
+			read -t 3 -n 1 key
+    			case "$key" in
+        			p)
+					timestamp=$(date +%Y%m%d_%H%M%S)
 
-    		case "$key" in
-        	p)
-            	timestamp=$(date +%Y%m%d_%H%M%S)
-            	top -b -n 1 -c > "snapshot_admin_$timestamp.txt"
-           	 echo "Saved snapshot"
-           	FILE="snapshot_admin_$timestamp.txt"
-		HASH=$(sha256sum "$FILE" | awk '{print $1}')
-		echo "$FILE $HASH" >> integrity.txt
-		 ;;
-		q)
-			break
-			;;
-		esac
+					FILE="snapshot_admin_${timestamp}_${FILEUSERNAME}.txt"
+
+					top -b -n 1 -c > "$FILE"
+
+					echo "Saved snapshot: $FILE"
+
+					HASH=$(sha256sum "$FILE" | awk '{print $1}')
+					echo "$FILE $HASH" >> integrity.txt
+					;;
+				q)
+					break
+					;;
+			esac
+		done
 	else
-		clear
-		ps -eo pid,user,%cpu,%mem,cmd --sort=-%cpu | head -n 20
-		echo "Press 'p' to take a snapshot, 'q' to quit"
-		read -n 1 -s key
-		case "$key" in
-		p)
-		timestamp=$(date +%Y%m%d_%H%M%S)
-		ps -eo pid,user,%cpu,%mem,cmd --sort=-%cpu | head -n 2 > "snapshot_auditor_$timestamp.txt"
-		FILE="snapshot_auditor_$timestamp.txt"
-		HASH=$(sha256sum "$FILE" | awk '{print $1}')
-		echo "$FILE $HASH" >> integrity.txt
-		;;
-		q)
-			break
-			;;
-		esac
+		while true; do
+			clear
+			top -b -n 1 -u !root
+			echo
+			echo "Press 'p' to take a snapshot, 'q' to quit"
+			read -t 3 -n 1 key
+			case "$key" in
+				p)
+					timestamp=$(date +%Y%m%d_%H%M%S)
+					FILE="snapshot_auditor_${timestamp}_${FILEUSERNAME}.txt"
+					top -b -n 1 -u "!root" > "$FILE"
+					HASH=$(sha256sum "$FILE" | awk '{print $1}')
+					echo "Saved snapshot: $FILE"
+					echo "$FILE $HASH" >> integrity.txt
+					;;
+				q)
+					break
+					;;
+			esac
+		done
 	fi
-	done
 else
     whiptail --title "Invalid Credentials" --msgbox "Please try again" 8 78
     exit 1
