@@ -36,7 +36,12 @@ case $CHOICE in
 
 	PASSWORDHASH=$(echo -n "${FILESALT}${PASSWORD}" | sha256sum | awk '{print $1}')
 	if [[ "$PASSWORDHASH" == "$FILEPASSWD" ]]; then
+
+		timestamp=$(date +%Y%m%d_%H%M%S)
+		echo "$USERNAME Logged into SSO at $timestamp" >> actionlog.txt
+	
 		if [[ "$ROLE" = "ADMIN" ]]; then
+			
 			while true; do
 				clear
 				top -b -n 1
@@ -55,6 +60,7 @@ case $CHOICE in
 
 					HASH=$(sha256sum "$FILE" | awk '{print $1}')
 					echo "$FILE $HASH" >>integrity.txt
+					echo "$USERNAME created a snapshot at $timestamp" > actionlog.txt
 					;;
 				q)
 					break
@@ -76,6 +82,7 @@ case $CHOICE in
 					HASH=$(sha256sum "$FILE" | awk '{print $1}')
 					echo "Saved snapshot: $FILE"
 					echo "$FILE $HASH" >>integrity.txt
+					echo "$USERNAME created a snapshot at $timestamp" > actionlog.txt
 					;;
 				q)
 					break
@@ -85,6 +92,8 @@ case $CHOICE in
 		fi
 	else
 		whiptail --title "Invalid Credentials" --msgbox "Please try again" 8 78
+		timestamp=$(date +%Y%m%d_%H%M%S)
+		echo  "$USERNAME tried to log into the SSO Task Manager at $timestamp" >> actionlog.txt
 		exit 1
 	fi
 	;;
@@ -119,7 +128,7 @@ case $CHOICE in
 		ROLE="AUDITOR"
 	fi
 
-	if [[ "$ROLE" = "ADMIN" ]]; then
+	
 
 		if [ -z "$FILEUSERNAME" ]; then
 			whiptail --title "ERROR" --msgbox "Invalid Credentials" 8 78
@@ -129,8 +138,8 @@ case $CHOICE in
 		PASSWORDHASH=$(echo -n "${FILESALT}${PASSWORD}" | sha256sum | awk '{print $1}')
 
 		if [[ "$PASSWORDHASH" == "$FILEPASSWD" ]]; then
-
-			
+			timestamp=$(date +%Y%m%d_%H%M%S)
+			echo "$USERNAME logged into the file viewer and deletor at $timestamp" >> actionlog.txt
 			CHOICE=$(
 				whiptail --title "View Logs or Delete Logs" --menu "Make your choice" 16 100 9 \
 				"1)" "View Logs" \
@@ -144,7 +153,7 @@ case $CHOICE in
 
 			files=()
 
-			for f in snapshot_*.txt; do
+			for f in snapshot_*.txt actionlog.txt warninglog.txt; do
 				[ -e "$f" ] || continue
 				files+=("$f" "$f")
 			done
@@ -157,8 +166,10 @@ case $CHOICE in
 			STORED_HASH=$(awk -v file="$LOGFILE" '$1 == file {print $2}' integrity.txt | tr -d '\n')
 
 			if [[ "$LOGHASH" == "$STORED_HASH" ]]; then
-
-				if [ -n "$LOGFILE" ]; then
+	
+					timestamp=$(date +%Y%m%d_%H%M%S)
+					echo "$USERNAME is viewing $LOGFILE at $timestamp" > actionlog.txt
+					if [ -n "$LOGFILE" ]; then
 					whiptail --title "Viewing $LOGFILE" --scrolltext --textbox "$LOGFILE" 20 100
 				fi
 
@@ -172,9 +183,12 @@ case $CHOICE in
 			#Log Deleter
 
 			"2)")
+				if [[ "$ROLE" = "ADMIN" ]]; then
+				timestamp=$(date +%Y%m%d_%H%M%S)
+				echo "$USERNAME has entered the log deletor menu at $timestamp" >> actionlog.txt
 				files=()
 
-				for f in snapshot_*.txt; do
+				for f in snapshot_*.txt actionlog.txt warninglog.txt; do
     					[ -e "$f" ] || continue
     					files+=("$f" "$f")
 				done
@@ -196,19 +210,25 @@ case $CHOICE in
 					else
 						awk -v file="$LOGFILE" '$1 != file' integrity.txt > integritytemp.txt && mv integritytemp.txt integrity.txt
 						rm -f "$LOGFILE"
+						echo "$USERNAME deleted log file $LOGFILE at $timestamp" >> actionlog.txt
 					fi
 				
-
+				else
+					timestamp=$(date +%Y%m%d_%H%M%S)
+					whiptail --msgbox "Invalid Credentials" 20 100 10
+					echo "Warning: Auditor $USERNAME tried to delete a log file at $timestamp" >> warninglog.txt
+					exit 0
+				fi
 			;;
 			esac
 
 		else
-
+			timestamp=$(date +%Y%m%d_%H%M%S)
 			whiptail --title "Invalid Credentials" --msgbox "Please try again" 8 78
+			echo "$USERNAME tried to log into the log viewer and deletor at $timestamp" >> warninglog.txt
 			exit 1
 
 		fi
-	fi
 	;;
 
 esac
